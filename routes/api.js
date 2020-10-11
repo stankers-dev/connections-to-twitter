@@ -5,7 +5,7 @@ const router = express.Router();
 
 // initial route
 router.get('/', function(req, res) {
-    console.log('inital api route hit');
+    res.send('hello');
 });
 
 module.exports = router;

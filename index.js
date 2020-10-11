@@ -11,7 +11,10 @@ const api = require('./routes/api.js');
 const app = express();
 
 // pull in routes
-app.use('api', api);
+app.use('/api', api);
+
+// establish static dir
+app.use(express.static(__dirname + '/public'));
 
 // middleware logging
 app.use((req, res, next) => {
