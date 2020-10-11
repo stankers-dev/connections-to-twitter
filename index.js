@@ -3,6 +3,7 @@ const express = require('express');
 const axios = require('axios');
 const path = require('path');
 const api = require('./routes/api.js');
+require('dotenv').config();
 
 // routes
 // const route = shit
