@@ -24,7 +24,14 @@
   </head>
   <body>
     <div class="button_box">
-      <button type="button" class="btn btn-primary" onclick="smack()">Smack me daddy.</button>
+      <form>
+        <div class="form-group" method="post">
+          <label for="inputTweet">What To Tweet?</label>
+          <input type="tweet" class="form-control" id="inputTweet" aria-describedby="inputTweet" placeholder="Enter tweet...">
+          <small id="tweetNotice" class="form-text text-muted">Do not enter the same tweet twice in a row!</small>
+        </div>
+        <button type="submit" class="btn btn-primary" onclick="sendTweet(inputTweet.value)">Tweet!</button>
+      </form>
     </div>
 
     <!-- Optional JavaScript -->

@@ -1,21 +1,22 @@
-console.log('js file found');
+console.log("js file found");
 
-var HttpClient = function() {
-    this.get = function(aUrl, aCallback) {
-        var anHttpRequest = new XMLHttpRequest();
-        anHttpRequest.onreadystatechange = function() { 
-            if (anHttpRequest.readyState == 4 && anHttpRequest.status == 200)
-                aCallback(anHttpRequest.responseText);
-        }
+var HttpClient = function () {
+  this.post = function (aUrl, aCallback) {
+    var anHttpRequest = new XMLHttpRequest();
+    anHttpRequest.onreadystatechange = function () {
+      if (anHttpRequest.readyState == 4 && anHttpRequest.status == 200)
+        aCallback(anHttpRequest.responseText);
+    };
 
-        anHttpRequest.open( "GET", aUrl, true );            
-        anHttpRequest.send( null );
-    }
-}
+    anHttpRequest.open("POST", aUrl, true);
+    anHttpRequest.send(null);
+  };
+};
 
-function smack() {
-   let client = new HttpClient();
-   client.get('/api', (res) => {
-       console.log(res);
-   });
+function sendTweet(inputTweet) {
+  console.log(inputTweet);
+  let client = new HttpClient();
+  client.post("/api/:" + inputTweet, (res) => {
+    console.log(res);
+  });
 }

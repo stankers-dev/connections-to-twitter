@@ -3,10 +3,6 @@ const express = require('express');
 const axios = require('axios');
 const path = require('path');
 const api = require('./routes/api.js');
-require('dotenv').config();
-
-// routes
-// const route = shit
 
 // init express
 const app = express();
@@ -22,11 +18,6 @@ app.use((req, res, next) => {
     let time = Date.now();
     console.log(`web page hit at ${time}`);
     next();
-})
-
-// send base html
-app.get('/', (req, res) => {
-    res.sendFile('public/index.html', { root: __dirname });
 })
 
 // serve
