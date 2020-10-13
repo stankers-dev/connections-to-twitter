@@ -1,33 +1,74 @@
 // imports
 const express = require("express");
-const axios = require("axios");
 const router = express.Router();
-// twitter package
-var Twitter = require("twitter");
+const { sendTweet } = require("./twitterConnection");
 
-// api secure data
-require("dotenv").config();
+const fs = require("fs");
 
-// env
-const TOKEN = process.env.BEARER_TOKEN;
+let latestMessage = "";
+let prevMessage = "";
+//08:38:31 [R] <img=2>LunaLuvgood: Gm stankers
+var pattern = /^[0-9][0-9]:[0-9][0-9]:[0-9][0-9] [[][R][\]] [0-9a-zA-Z_<>=]+: Rt/g;
 
-var client = new Twitter({
-  consumer_key: process.env.CONSUMER_KEY,
-  consumer_secret: process.env.CONSUMER_SECRET,
-  access_token_key: process.env.ACCESS_TOKEN,
-  access_token_secret: process.env.ACCESS_SECRET,
-});
+//let whiteList = ["LunaLuvgood", "stankyppfoot", "JoneZii", "Molly Seidel", "Marx n rec", "Spaciousness", "Im Cripping", "Ray Sensei"];
+const getLatestMessage = function () {
+  // find chat log file
+  // C:\Users\joshs\.runelite\chatlogs\friends
+  fs.readFile(
+    "./../../../.runelite/chatlogs/friends/latest.log",
+    "UTF-8",
+    function (err, data) {
+      if (err) {
+        console.log(err);
+      }
+      // divide chat into array
+      chats = data.split("\n");
+      // check if latest message is a new message
+      if (
+        chats[chats.length - 2].replace(
+          /[\uFFFD]/g,
+          " "
+        ) != latestMessage
+      ) {
+        prevMessage = chats[chats.length - 3];
+        latestMessage = chats[chats.length - 2];
+        latestMessage = latestMessage.replace(
+          /[\uFFFD]/g,
+          " "
+        );
+        console.log(latestMessage);
+        // console.log(latestMessage.indexOf("Molly Seidel:"));
+        // console.log(latestMessage.indexOf("Ray Sensei:"));
+        // parse current message and determine actions
+        if (latestMessage.match(pattern)) {
+          // authorized users
+          // for (var i = 0; i < whiteList.length; i++) {
+          //   if (latestMessage.indexOf(whiteList[i]) > -1) {
+              // remove timestamp
+              prevMessage = prevMessage.substring(13);
 
-// route
-router.post("/:tweetContent", (req, res) => {
-  client
-    .post("statuses/update.json", { status: req.params.tweetContent })
-    .then(function (tweet) {
-      console.log(tweet);
-    })
-    .catch(function (error) {
-      throw error;
-    });
-});
+              // replace encoding w/ iron tag
+              prevMessage = prevMessage.replace(/<img=10>/, "[⛑️] ");
+              prevMessage = prevMessage.replace(/<img=2>/, "[👷] ");
+              prevMessage = prevMessage.replace(/<img=3>/, "[👨‍🚀] ");
+
+              // strip @ symbol to re/opmove tagging
+              prevMessage = prevMessage.replace(/@/g, "");
+
+              // trim and filter message
+              console.log("RETWEETED: " + prevMessage);
+              sendTweet(prevMessage);
+          //   }
+          // }
+        }
+      }
+      // delete tweet
+
+      // TODO: add spam filter, language, etc
+    }
+  );
+};
+
+setInterval(getLatestMessage, 100);
 
 module.exports = router;

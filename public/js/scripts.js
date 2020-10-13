@@ -16,7 +16,7 @@ var HttpClient = function () {
 function sendTweet(inputTweet) {
   console.log(inputTweet);
   let client = new HttpClient();
-  client.post("/api/:" + inputTweet, (res) => {
+  client.post("/api/" + inputTweet, (res) => {
     console.log(res);
   });
 }
