@@ -1,16 +1,23 @@
 // imports
 const express = require("express");
 const router = express.Router();
-const { sendTweet } = require("./twitterConnection");
+const { sendTweet, deleteTweet } = require("./connections/twitterConnection");
+const { cleanTweet } = require("./util/tweetCleaner");
 
 const fs = require("fs");
 
 let latestMessage = "";
 let prevMessage = "";
 //08:38:31 [R] <img=2>LunaLuvgood: Gm stankers
-var pattern = /^[0-9][0-9]:[0-9][0-9]:[0-9][0-9] [[][R][\]] [0-9a-zA-Z_<>=]+: Rt/g;
+var postTweetPattern = /^[0-9][0-9]:[0-9][0-9]:[0-9][0-9] [[][R][\]] [0-9a-zA-Z_<>= ]+: Rt/g;
+var deleteTweetPattern = /^[0-9][0-9]:[0-9][0-9]:[0-9][0-9] [[][R][\]] [0-9a-zA-Z_<>= ]+: Del/g;
 
-//let whiteList = ["LunaLuvgood", "stankyppfoot", "JoneZii", "Molly Seidel", "Marx n rec", "Spaciousness", "Im Cripping", "Ray Sensei"];
+// authorized list of users
+let whitelist = ["stankyppfoot", "Molly Seidel", "LunaLuvgood", 
+      "JoneZii", "Spaciousness", "Pet Awowogei", "Im Cripping", "Phocks",
+      "Stra p", "425Druid", "Stankzu", "Peanut Blitz", "Sploitz"];
+
+// gets the latest message then determines what to do w/ it
 const getLatestMessage = function () {
   // find chat log file
   // C:\Users\joshs\.runelite\chatlogs\friends
@@ -24,47 +31,50 @@ const getLatestMessage = function () {
       // divide chat into array
       chats = data.split("\n");
       // check if latest message is a new message
-      if (
-        chats[chats.length - 2].replace(
-          /[\uFFFD]/g,
-          " "
-        ) != latestMessage
-      ) {
+      if (chats[chats.length - 2].replace(/[\uFFFD]/g, " ") != latestMessage) {
+
+        // remove invalid unicode
         prevMessage = chats[chats.length - 3];
         latestMessage = chats[chats.length - 2];
-        latestMessage = latestMessage.replace(
-          /[\uFFFD]/g,
-          " "
-        );
-        console.log(latestMessage);
-        // console.log(latestMessage.indexOf("Molly Seidel:"));
-        // console.log(latestMessage.indexOf("Ray Sensei:"));
+        latestMessage = latestMessage.replace(/[\uFFFD]/g, " ");
+
         // parse current message and determine actions
-        if (latestMessage.match(pattern)) {
+        // check if its post tweet
+        if (latestMessage.match(postTweetPattern)) {
           // authorized users
-          // for (var i = 0; i < whiteList.length; i++) {
-          //   if (latestMessage.indexOf(whiteList[i]) > -1) {
-              // remove timestamp
-              prevMessage = prevMessage.substring(13);
+          for (let i = 0; i < whitelist.length; i++) {
 
-              // replace encoding w/ iron tag
-              prevMessage = prevMessage.replace(/<img=10>/, "[⛑️] ");
-              prevMessage = prevMessage.replace(/<img=2>/, "[👷] ");
-              prevMessage = prevMessage.replace(/<img=3>/, "[👨‍🚀] ");
+            //
+            if (latestMessage.indexOf(whitelist[i]) != -1) {
+              
+              // refine tweet
+              let refinedTweet = cleanTweet(prevMessage);
 
-              // strip @ symbol to re/opmove tagging
-              prevMessage = prevMessage.replace(/@/g, "");
+              // tweet to acc
+              sendTweet(refinedTweet);
 
-              // trim and filter message
-              console.log("RETWEETED: " + prevMessage);
-              sendTweet(prevMessage);
-          //   }
-          // }
+            }
+          }
+        }
+        
+        // delete tweet pattern
+        if (latestMessage.match(deleteTweetPattern)) {
+
+          // authorized users
+          for (let i = 0; i < whitelist.length; i++) {
+        
+            if (latestMessage.indexOf(whitelist[i]) != -1) {
+              
+              // refine tweet
+              //let refinedTweet = cleanTweet(prevMessage);
+
+              // tweet to acc
+              deleteTweet("id placeholder");
+
+            }
+          }
         }
       }
-      // delete tweet
-
-      // TODO: add spam filter, language, etc
     }
   );
 };

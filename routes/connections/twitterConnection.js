@@ -26,4 +26,11 @@ const sendTweet = function (tweetContent) {
     });
 };
 
+// delete tweet
+// requires tweet id and username
+const deleteTweet = function(id) {
+  console.log("tweet deleted: " + id);
+}
+
 module.exports.sendTweet = sendTweet;
+module.exports.deleteTweet = deleteTweet;
