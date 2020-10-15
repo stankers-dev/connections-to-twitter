@@ -19,7 +19,8 @@ const sendTweet = function (tweetContent) {
   client
     .post("statuses/update.json", { status: tweetContent })
     .then(function (tweet) {
-      console.log(tweet);
+      console.log("Succesful tweet: " + tweet.user.id);
+      return tweet.user.id;
     })
     .catch(function (error) {
       console.log(error);
