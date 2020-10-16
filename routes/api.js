@@ -3,8 +3,10 @@ const express = require("express");
 const router = express.Router();
 const { sendTweet, deleteTweet } = require("./connections/twitterConnection");
 const { cleanTweet, getUserName } = require("./util/tweetCleaner");
+const tinytext = require('tiny-text');
 
 const fs = require("fs");
+const { send } = require("process");
 
 // track messages
 let latestMessage = "";
@@ -43,7 +45,11 @@ let whitelist = [
   "Donnie Darko",
   "Ko Ley",
   "Alollyon",
-  "Cat Shaped"
+  "Cat Shaped",
+  "juuuuuuice",
+  "fergina",
+  "Vid Master",
+  "Tardletics"
 ];
 
 // block list -->
@@ -88,26 +94,9 @@ const getLatestMessage = function () {
             // if user found in whitelist
             if (latestMessage.indexOf(whitelist[i]) != -1) {
               // refine tweet
-              console.log("PREVIOUS MESSAGE: " + prevMessage);
               let refinedTweet = cleanTweet(prevMessage);
-              // move name icons to seperate methods
-              if (refinedTweet.includes("Peanut Blitz")) {
-                var id = sendTweet("[🥜] " + refinedTweet);
-              } else if (refinedTweet.includes("Im Cripping")) {
-                var id = sendTweet("[💨] " + refinedTweet);
-              } else if (refinedTweet.includes("ImaGetchya")) {
-                var id = sendTweet("[🍑 CC BITCH 🍑] " + refinedTweet);
-              } else if (refinedTweet.includes("Pet Awowogei")) {
-                  var id = sendTweet("[🙈] " + refinedTweet);
-              } else if (refinedTweet.includes("Cat Shaped")) {
-                var id = sendTweet("[😻] " + refinedTweet);
-              } else if (refinedTweet.includes("Spaciousness")) {
-                var id = sendTweet("[😊] " + refinedTweet);
-              } else if (refinedTweet.includes("wiggle worm")) {
-                var id = sendTweet("[🐛] " + refinedTweet);
-              }  else {
-                var id = sendTweet(refinedTweet);
-              }
+              refinedTweet = refinedTweet + "\n " + tinytext("tweeted by: " + getUserName(latestMessage));
+              sendTweet(refinedTweet);
             }
           }
         }
