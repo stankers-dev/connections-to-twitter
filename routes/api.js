@@ -1,148 +1,207 @@
 // imports
 const express = require("express");
+const app = express();
 const router = express.Router();
-const { sendTweet, deleteTweet } = require("./connections/twitterConnection");
-const { cleanTweet, getUserName } = require("./util/tweetCleaner");
-const tinytext = require('tiny-text');
+const {lookupUsers, getFollowersForUser, getUserById, followUser, getFollowingForUser,checkIsMutual} = require("./connections/twitterConnection.js");
+const {promisify} = require('util');
+const { resolve } = require("path");
+const { Resolver } = require("dns");
+const { doesNotMatch } = require("assert");
+const { appendToFile, readFile, writeToFile } = require("./util/fileIO.js");
+const { writeFile } = require("fs");
 
-const fs = require("fs");
-const { send } = require("process");
+let cursor = -1;
+let usersFollowed = 0;
 
-// track messages
-let latestMessage = "";
-let prevMessage = "";
-
-// PROD (public) regex patterns
-const POST_TWEET_PATTERN = /^[0-9][0-9]:[0-9][0-9]:[0-9][0-9] [[][R][\]] [0-9a-zA-Z_<>= ]+: Rt/g;
-const DELETE_TWEET_PATTERN = /^[0-9][0-9]:[0-9][0-9]:[0-9][0-9] [[][R][\]] [0-9a-zA-Z_<>= ]+: Del/g;
-const MAP_TWEET_PATTERN = /^[0-9][0-9]:[0-9][0-9]:[0-9][0-9] [[][R][\]] [0-9a-zA-Z_<>= ]+: Map/g;
-// TEST (clan chat) regex patterns
-// const POST_TWEET_PATTERN   = /^[0-9][0-9]:[0-9][0-9]:[0-9][0-9] [0-9a-zA-Z_<>= ]+: Rt/g;
-// const DELETE_TWEET_PATTERN = /^[0-9][0-9]:[0-9][0-9]:[0-9][0-9] [0-9a-zA-Z_<>= ]+: Del/g;
-// const MAP_TWEET_PATTERN    = /^[0-9][0-9]:[0-9][0-9]:[0-9][0-9] [0-9a-zA-Z_<>= ]+: Map/g;
-
-// map usernames to tweet ids
-let users = new Map();
-let username = "";
-
-// authorized list of users
-let whitelist = [
-  "stankyppfoot",
-  "Molly Seidel",
-  "LunaLuvgood",
-  "JoneZii",
-  "Spaciousness",
-  "Pet Awowogei",
-  "Im Cripping",
-  "Phocks",
-  "1 v1",
-  "Stra p",
-  "425Druid",
-  "Stankzu",
-  "Peanut Blitz",
-  "Sploitz",
-  "Spun Wooks",
-  "Donnie Darko",
-  "Ko Ley",
-  "Alollyon",
-  "Cat Shaped",
-  "juuuuuuice",
-  "fergina",
-  "Vid Master",
-  "Tardletics"
-];
-
-// block list -->
-// RSP, any home dawg alt
-
-// gets the latest message then determines what to do w/ it
-const getLatestMessage = function () {
-  // find chat log file
-  // C:\Users\joshs\.runelite\chatlogs\friends
-  fs.readFile(
-    "./../../../.runelite/chatlogs/friends/latest.log",
-    "UTF-8",
-    function (err, data) {
-      if (err) {
-        console.log(err);
+// get followers for a specific id
+router.get('/getFollowers/:screen_name&:cursor', function (req, res) {
+  let cursor = req.params.cursor;
+  let screen_name = req.params.screen_name;
+  getFollowersForUser(screen_name, cursor)
+    .then((response) => {
+      if(response.next_cursor == '0'){
+        let responseJson = {
+          status: 'done',
+          cursor: response.next_cursor
+        }
+        console.log(`sending response: ${JSON.stringify(responseJson)}`);
+        res.json(responseJson);
+      } else {
+        let responseJson = {
+          status: 'pending',
+          cursor: response.next_cursor
+        }
+        console.log(`sending response: ${JSON.stringify(responseJson)}`);
+        res.json(responseJson);
       }
-      // divide chat into array
-      chats = data.split("\n");
-      // check if latest message is a new message
-      if (chats[chats.length - 2].replace(/[\uFFFD]/g, " ") != latestMessage) {
-        // set last 2 messages
-        prevMessage = chats[chats.length - 3];
-        latestMessage = chats[chats.length - 2];
+    })
+    .catch((err) => {
+      console.log(err);
+      res.json({
+        status: 'errored',
+        error: err
+      })
+    });
+});
 
-        // remove unusable unicode
-        latestMessage = latestMessage.replace(/[\uFFFD]/g, " ");
+// get all top accounts for keyword
+router.get('/getUsers/:keyword&:count&:page', function (req, res) {
+  lookupUsers(req.params.keyword, req.params.count, req.params.page)
+    .then((users) => {
+      res.send(users);
+    })
+})
 
-        // parse current message and determine actions
-        // check if its post tweet
-        // prevent retweet of 'rt' (duplicate cmd)
-        if (
-          latestMessage.match(POST_TWEET_PATTERN) &&
-          prevMessage.match(POST_TWEET_PATTERN)
-        ) {
-          console.log("rt message aborted");
-        } else if (latestMessage.match(POST_TWEET_PATTERN)) {
-          // parse username from message
-          username = getUserName(latestMessage);
-          console.log("Username: " + username);
-          // authorized users
-          for (let i = 0; i < whitelist.length; i++) {
-            // if user found in whitelist
-            if (latestMessage.indexOf(whitelist[i]) != -1) {
-              // refine tweet
-              let refinedTweet = cleanTweet(prevMessage);
-              refinedTweet = refinedTweet + "\n " + tinytext("tweeted by: " + getUserName(latestMessage));
-              sendTweet(refinedTweet);
-            }
-          }
-        }
-
-        // delete tweet pattern
-        if (latestMessage.match(DELETE_TWEET_PATTERN)) {
-          // authorized users
-          for (let i = 0; i < whitelist.length; i++) {
-            if (latestMessage.indexOf(whitelist[i]) != -1) {
-              // refine tweet
-              //let refinedTweet = cleanTweet(prevMessage);
-
-              // tweet to acc
-              deleteTweet("id placeholder");
-            }
-          }
-        }
-
-        // console log map
-        if (latestMessage.match(MAP_TWEET_PATTERN)) {
-          // authorized users
-          for (let i = 0; i < whitelist.length; i++) {
-            if (latestMessage.indexOf(whitelist[i]) != -1) {
-              let iter = users.keys();
-              let curKey = "";
-              for (var j = 0; j < users.size; j++) {
-                console.log("auth");
-                curKey = iter.next();
-                console.log("CURKEY: " + curKey);
-                console.log(
-                  i + " - " + curKey.keys + " : " + users.get(curKey)
-                );
-              }
-            }
-          }
-        }
-      }
+// get followers for a specific id
+router.get('/getTopAccounts', function (req, res) {
+  fs.readFile(`./top-accounts.txt`, 'utf8' , (err, data) => {
+    if (err) {
+      res.send(err)
+      return
     }
-  );
-};
+    let accounts = data.split(",");
+    let trimmedAccounts = [ ... new Set(accounts)];
+    res.send(JSON.stringify(trimmedAccounts));
+  })
+});
 
-// update map with new user ID
-const logUserId = function () {
-  //
-};
 
-setInterval(getLatestMessage, 100);
+// check if 2 users are mutual following
+router.get('/checkMutual/:id1&:id2', function (req, res) {
+  // console.log(`getting user ${req.params.id2}`);
+  // getUserById(req.params.id2)
+  //   .then((results) => {
+      console.log(`checking if ${req.params.id2} is following you back...`);
+      checkIsMutual(req.params.id1, req.params.id2)
+      .then((value) => {
+        res.send(value);
+      })
+      .catch((err) =>{
+        console.log(err);
+      })
+    // })
+    // .catch((err) => {
+    //   console.log(err);
+    // });
+});
+
+
+// get following for a specific id
+router.get('/getFollowing/:id&:cursor', function (req, res) {
+  let cursor = req.params.cursor;
+  let id = req.params.id;
+  getFollowingByPage(id, cursor)
+    .then((response) => {
+      if(response.next_cursor == '0'){
+        let responseJson = {
+          status: 'done',
+          cursor: response.next_cursor
+        }
+        console.log(`sending response: ${JSON.stringify(responseJson)}`);
+        res.json(responseJson);
+      } else {
+        let responseJson = {
+          status: 'pending',
+          cursor: response.next_cursor
+        }
+        console.log(`sending response: ${JSON.stringify(responseJson)}`);
+        res.json(responseJson);
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      res.json({
+        status: 'errored',
+        error: err
+      })
+    });
+});
+
+function getFollowingByPage(id, cursor){
+	return new Promise((resolve, reject) => {
+    getFollowingForUser(id, cursor)
+      .then(value => {
+        let followed = value.ids;
+        console.log(followed);
+        console.log(`you are following ${followed.length} users`);
+        fs.writeFile(`./following.txt`, followed.join(), err => {});
+        cursor = value.next_cursor;
+        resolve(value);
+      })
+      .catch(function (error) {
+        reject(error);
+      });
+    });
+}
+
+// get followers.txt trimmed
+router.get('/getFollowersList/:page&:count', async (req, res) => {
+  let page = req.params.page;
+  const file = await readFile(`./followers${page}.txt`);
+  let fileArr = file.split(',');
+  let hundredUsers = fileArr.splice(0, req.params.count);
+  writeToFile(`./followers${page}.txt`, fileArr.join());
+  res.send(JSON.stringify(hundredUsers));
+});
+
+// get followers.txt trimmed
+router.get('/getNewFollowingList', async (req, res) => {
+  const file =  await readFile(`./new-following.txt`);
+  res.send(JSON.stringify(file));
+});
+
+// takes in a user id
+// and returns a json for that user
+router.get('/getUsers/:id', function (req, res) {
+  getUserById(req.params.id)
+    .then((value) => {
+      res.send(value)
+    })
+    .catch((error) => {
+      res.send(error);
+    });
+})
+
+router.get('/followTool/:id', function (req, res) {
+  // grab first 20 users, make an array, and remove them from the file
+  // check all 20 users bio for keyword
+  // if so, follow them and add them to a 'followed' file
+  getUserById(req.params.id)
+    .then(value => {
+      // add users to new list
+      let pokemonFan = {
+        'id': value.id_str,
+        'name': value.screen_name,
+        'description': value.description.toLowerCase()
+      };
+      if(pokemonFan.description.includes('poké') 
+        || pokemonFan.description.includes('poke') 
+        || pokemonFan.description.includes('tcg')
+        || pokemonFan.description.includes('trainer')
+        || pokemonFan.description.includes('pika')
+        || pokemonFan.description.includes('eevee')
+        || pokemonFan.description.includes('zard') 
+        || pokemonFan.description.includes('card')
+        || pokemonFan.description.includes('pack')
+        || pokemonFan.description.includes('collector')
+        || pokemonFan.description.includes('nintendo'))
+      {
+        followUser(pokemonFan.id, pokemonFan.name)
+          .then((value) => {
+            res.json(value)
+          })
+          .catch((error) => {
+            res.send(error);
+          });
+      } else {
+        res.send({
+          'followed': false
+        })
+      }
+  })
+  .catch((error) => {
+    res.send(error);
+  });
+})
 
 module.exports = router;

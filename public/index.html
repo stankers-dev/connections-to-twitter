@@ -3,7 +3,9 @@
   <head>
     <!-- external css -->
     <link rel="stylesheet" href="/css/styles.css">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js" type="text/javascript"></script>
     <script src="/js/scripts.js"></script>
+
 
     <!-- Required meta tags -->
     <meta charset="utf-8" />
@@ -23,16 +25,86 @@
     <title>Index.html</title>
   </head>
   <body>
-    <div class="button_box">
-      <form>
-        <div class="form-group" method="post">
-          <label for="inputTweet">What To Tweet?</label>
-          <input type="tweet" class="form-control" id="inputTweet" aria-describedby="inputTweet" placeholder="Enter tweet...">
-          <small id="tweetNotice" class="form-text text-muted">Do not enter the same tweet twice in a row!</small>
+      <!-- <div class="container">
+        <div class="ispinner ispinner-large" id="spinner">
+          <div class="ispinner-blade"></div>
+          <div class="ispinner-blade"></div>
+          <div class="ispinner-blade"></div>
+          <div class="ispinner-blade"></div>
+          <div class="ispinner-blade"></div>
+          <div class="ispinner-blade"></div>
+          <div class="ispinner-blade"></div>
+          <div class="ispinner-blade"></div>
         </div>
-        <button type="submit" class="btn btn-primary" onclick="sendTweet(inputTweet.value)">Tweet!</button>
-      </form>
+      </div> -->
+
+  <div class="container">
+    <div class="d-flex flex-row justify-content-center"> 
+      <div class="p-6">
+        <label for="exampleFormControlTextarea1">Accounts To Get Followers:</label>
+        <textarea class="form-control" id="accounts-text-area" rows="3"></textarea>
+      </div>
     </div>
+      <div class="d-flex flex-row justify-content-center">
+        <div class="p-3">
+          <div class="align-self-center mr-auto">
+            <a class="btn btn-large btn-success" onclick="getFollowers()">Get All Followers!</a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="d-flex flex-row justify-content-center"> 
+      <div class="p-6">
+        <label for="exampleFormControlTextarea1">Top Account Associated Keywords:</label>
+        <textarea class="form-control" id="top-accounts-text-area" rows="2"></textarea>
+      </div>
+    </div>
+    <div class="d-flex flex-row justify-content-center">
+      <div class="p-3">
+        <div class="align-self-center mr-auto">
+          <a class="btn btn-large btn-success" onclick="getTopAccounts()">Get Suggested Top Accounts!</a>
+        </div>
+      </div>
+    </div>
+
+    
+      <!-- STOP HERE -->
+    <div class="d-flex flex-row justify-content-center">
+      <div class="p-3">
+        <div class="align-self-center mr-auto">
+          <a class="btn btn-large btn-success" onclick="unfollowUser()">Unfollow People...</a>
+        </div>
+      </div>
+    <div class="d-flex flex-row justify-content-center">
+      <div class="p-3">
+        <div class="align-self-center mr-auto">
+          <a class="btn btn-large btn-success" onclick="followUsersHelper()">Follow People...</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Modal title</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p>Modal body text goes here.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary">Save changes</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
     <!-- Optional JavaScript -->
     <!-- jQuery first, then Popper.js, then Bootstrap JS -->
